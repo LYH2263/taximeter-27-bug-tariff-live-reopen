@@ -76,7 +76,18 @@ def test_readonly_fare_not_persisted():
         r = s.fare(5, 2, True, None, False)
         assert r["run_id"] is None
         assert r["tariff"] == T  # 只读也返回本次五项
-        assert len(s.history()) == before
+        s.fare(5, 2, True, None, False)  # 连着再打一次只读
+        assert len(s.history()) == before  # 记录条数保持不动
+
+def test_record_open_matches_snapshot_across_tariff_saves():
+    with mk_service() as s:
+        r = s.fare(5, 2, True, None, True)  # 落表
+        snap = s.run(r["run_id"])           # 按编号取出,停在落表那一刻
+        assert snap["result"]["tariff"] == T
+        s.update_tariff({"start_price": 20, "start_include_km": 2, "per_km": 3.0, "per_slow_min": 1.0, "night_factor": 1.5})
+        assert s.run(r["run_id"]) == snap   # 记录页再打开(与按编号取出同路径),五项与应付不动
+        s.update_tariff({"start_price": 9, "start_include_km": 3, "per_km": 2.0, "per_slow_min": 0.6, "night_factor": 1.1})
+        assert s.run(r["run_id"]) == snap   # 后来再保存运价,旧记录不被改掉
 
 def test_tariff_update_persists():
     with mk_service() as s:

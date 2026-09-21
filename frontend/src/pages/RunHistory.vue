@@ -6,10 +6,9 @@ const detail = ref(null)
 const lookupId = ref('')
 const err = ref('')
 const due = (r) => r.kind === 'compare' ? `白天 ¥${r.result.day_total} / 夜间 ¥${r.result.night_total}` : `¥${r.result.total}`
-const open = async (id, fromList = false) => {
+const open = async (id) => {
   err.value = ''; detail.value = null
-  const q = fromList ? '?opened=1' : ''
-  try { detail.value = await getJSON(`/api/history/${id}${q}`) }
+  try { detail.value = await getJSON(`/api/history/${id}`) }
   catch (e) { err.value = `记录 #${id} 不存在` }
 }
 onMounted(async () => { items.value = (await getJSON('/api/history')).items })
@@ -25,7 +24,7 @@ onMounted(async () => { items.value = (await getJSON('/api/history')).items })
       <tr><th>编号</th><th>类型</th><th>时间</th><th>应付</th><th></th></tr>
       <tr v-for="h in items" :key="h.id">
         <td>#{{ h.id }}</td><td>{{ h.kind }}</td><td>{{ h.created_at }}</td><td>{{ due(h) }}</td>
-        <td><a href="javascript:;" @click="open(h.id, true)">查看</a></td>
+        <td><a href="javascript:;" @click="open(h.id)">查看</a></td>
       </tr>
     </table>
     <div v-if="detail" class="panel">

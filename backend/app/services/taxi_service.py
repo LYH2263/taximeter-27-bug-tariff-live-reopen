@@ -29,20 +29,6 @@ class TaxiService:
     def run(self, run_id):
         row = runs.get(self._c, run_id)
         return _parse_run(row) if row else None
-    def open_record(self, run_id):
-        row = self.run(run_id)
-        if not row:
-            return None
-        t = tariff.get_active(self._c)
-        live = _snapshot(t)
-        inp = row["input"]
-        if row["kind"] == "compare":
-            fresh = compare_day_night(inp["distance_km"], inp["slow_min"], t)
-        else:
-            fresh = calc_fare(inp["distance_km"], inp["slow_min"], bool(inp.get("night")), t)
-        fresh["tariff"] = live
-        row["result"] = fresh
-        return row
     def fare(self, distance_km, slow_min, night, trip_id, persist):
         t = tariff.get_active(self._c)
         r = calc_fare(distance_km, slow_min, night, t)

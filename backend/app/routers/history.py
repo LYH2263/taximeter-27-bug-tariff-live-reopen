@@ -5,8 +5,8 @@ router = APIRouter()
 def history(limit: int = 50):
     with TaxiService() as s: return {"items": s.history(limit)}
 @router.get("/history/{run_id}")
-def history_detail(run_id: int, opened: int = 0):
+def history_detail(run_id: int):
     with TaxiService() as s:
-        row = s.open_record(run_id) if opened else s.run(run_id)
+        row = s.run(run_id)
         if not row: raise HTTPException(404)
         return row
