@@ -30,19 +30,9 @@ class TaxiService:
         row = runs.get(self._c, run_id)
         return _parse_run(row) if row else None
     def open_record(self, run_id):
-        row = self.run(run_id)
-        if not row:
-            return None
-        t = tariff.get_active(self._c)
-        live = _snapshot(t)
-        inp = row["input"]
-        if row["kind"] == "compare":
-            fresh = compare_day_night(inp["distance_km"], inp["slow_min"], t)
-        else:
-            fresh = calc_fare(inp["distance_km"], inp["slow_min"], bool(inp.get("night")), t)
-        fresh["tariff"] = live
-        row["result"] = fresh
-        return row
+        # 落表结果(五项运价快照与拆解应付)已在写入时固化,打开旧记录只读取快照,
+        # 不用当前现行运价重算——后来保存的运价不得改动已落下的旧记录。
+        return self.run(run_id)
     def fare(self, distance_km, slow_min, night, trip_id, persist):
         t = tariff.get_active(self._c)
         r = calc_fare(distance_km, slow_min, night, t)

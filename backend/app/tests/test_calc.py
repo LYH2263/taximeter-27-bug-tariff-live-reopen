@@ -70,6 +70,23 @@ def test_old_record_keeps_snapshot_after_tariff_change():
         assert new["tariff"]["start_price"] == 20.0   # 新计算跟新运价
         assert new["total"] != old["total"]
 
+def test_open_record_keeps_snapshot_after_tariff_change():
+    # 记录页点开同一条(?opened=1)必须读到落表快照;之后再保存运价,
+    # 旧记录的五项与应付都不得被现行值顶替或重算。
+    with mk_service() as s:
+        old = s.fare(5, 2, False, None, True)
+        s.update_tariff({"start_price": 20, "start_include_km": 2, "per_km": 3.0, "per_slow_min": 1.0, "night_factor": 1.5})
+        opened = s.open_record(old["run_id"])
+        assert opened["result"]["tariff"] == T
+        assert opened["result"]["total"] == old["total"]
+        assert opened["result"]["start"] == old["start"]
+        assert opened["result"]["mileage"] == old["mileage"]
+        assert opened["result"]["slow_fee"] == old["slow_fee"]
+        cmp_old = s.compare(18, 12, True)
+        opened_cmp = s.open_record(cmp_old["run_id"])
+        assert opened_cmp["result"]["tariff"]["night_factor"] == T["night_factor"]
+        assert opened_cmp["result"]["night_total"] == cmp_old["night_total"]
+
 def test_readonly_fare_not_persisted():
     with mk_service() as s:
         before = len(s.history())
